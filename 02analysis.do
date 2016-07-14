@@ -175,35 +175,41 @@ if `ddplots' == 1 {
 *-------------------------------------------------------------------------------
 
 if `ddtables' == 1 {
-foreach yvar in `depvars' {
-	eststo clear
-	// Mean:
-	eststo: xtreg `yvar'_w i.treatment2#i.post i.post i.treatment2, fe vce(cluster id)
-	
-	// Ln(Y):
-	gen `yvar'_ln = ln(`yvar'_w)
-	eststo: xtreg `yvar'_ln i.treatment2#i.post i.post i.treatment2, fe vce(cluster id)
-	
-	// Poisson:
-	capture {
-		eststo: poisson `yvar'_w i.treatment2#i.post i.post i.treatment2, vce(robust)
+	forvalues t = 1/`N_treatments' {
+		foreach yvar in `depvars' {
+			eststo clear
+			// Mean:
+			eststo: xtreg `yvar'_w i.treatment2#i.post i.post i.treatment2, ///
+				fe vce(cluster id)
+			
+			// Ln(Y):
+			gen `yvar'_ln = ln(`yvar'_w)
+			eststo: xtreg `yvar'_ln i.treatment2#i.post i.post i.treatment2, ///
+				fe vce(cluster id)
+			
+			// Poisson:
+			capture {
+				eststo: poisson `yvar'_w i.treatment2#i.post i.post i.treatment2, ///
+					vce(robust)
+			}
+			
+			// Pr(y>0):
+			tempvar `yvar'_bin
+			gen ``yvar'_bin' = (`yvar'_w > 0 & !missing(`yvar'))
+			eststo: xtprobit ``yvar'_bin' i.treatment2#i.post i.post i.treatment2, ///
+				pa vce(robust)
+			
+			// Median (q50):
+			eststo: qreg `yvar'_w i.treatment2#i.post i.post i.treatment2, vce(robust)
+			
+			esttab using tabs/ddimpact_`yvar'.tex, booktabs replace ///
+				mtitles(Mean "\$Ln(Y)\$" Poisson "\$Pr(Y>0)\$" Median) ///
+				order(1.treatment*#1.post) drop(*0.*) ///
+				varlabels(1.treatment2#1.post "Treated $\times$ Post" 1.post "Post" 1.treatment2 "Treated" _cons "Constant") ///
+				se star(* 0.10 ** 0.05 *** 0.01) ///
+				stats(N r2)
+		}
 	}
-	
-	// Pr(y>0):
-	tempvar `yvar'_bin
-	gen ``yvar'_bin' = (`yvar'_w > 0 & !missing(`yvar'))
-	eststo: xtprobit ``yvar'_bin' i.treatment2#i.post i.post i.treatment2, pa vce(robust)
-	
-	// Median (q50):
-	eststo: qreg `yvar'_w i.treatment2#i.post i.post i.treatment2, vce(robust)
-	
-	esttab using tabs/ddimpact_`yvar'.tex, booktabs replace ///
-		mtitles(Mean "\$Ln(Y)\$" Poisson "\$Pr(Y>0)\$" Median) ///
-		order(1.treatment*#1.post) drop(*0.*) ///
-		varlabels(1.treatment2#1.post "Treated $\times$ Post" 1.post "Post" 1.treatment2 "Treated" _cons "Constant") ///
-		se star(* 0.10 ** 0.05 *** 0.01) ///
-		stats(N r2)
-}
 }
 
 
