@@ -65,7 +65,7 @@ local N_treatments : list sizeof treatments
 // Extract periods
 levelsof year, local(years)
 
-// Post variable
+// Generate post variable
 gen post = (year > 2010)
 label define post 0 "Pre" 1 "Post"
 label values post post
@@ -97,6 +97,7 @@ esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, replace booktabs ///
 
 * Tab: Summary stats of all comparisons in baseyear
 *-------------------------------------------------------------------------------
+/*
 foreach treatvar of varlist treatment* {
 	eststo clear
 	eststo: qui estpost ttest `depvars_w' if year == `baseyear', ///
@@ -129,6 +130,35 @@ foreach treatvar of varlist treatment* {
 		nonumbers nomtitles label ///
 		stats(n_1 null null n_2, fmt(%9.0gc %9.0gc) layout("@ @ @ @") labels("Nº Firms"))
 }
+*/
+****
+
+eststo clear
+// No affiliates
+eststo: estpost tabstat f50c91 f22c20 dividends if treatment1==0, ///
+	stats(mean sd) columns(statistics)
+distinct id if treatment1==0
+estadd r(ndistinct)
+// Any affiliate
+eststo: estpost tabstat f50c91 f22c20 dividends if treatment1==1, ///
+	stats(mean sd) columns(statistics)
+distinct id if treatment1==1
+estadd r(ndistinct)
+// Affiliate of non TH
+eststo: estpost tabstat f50c91 f22c20 dividends if treatment3==1, ///
+	stats(mean sd) columns(statistics)
+distinct id if treatment3==1
+estadd r(ndistinct)
+// Affiliate of TH
+eststo: estpost tabstat f50c91 f22c20 dividends if treatment2==1, ///
+	stats(mean sd) columns(statistics)
+distinct id if treatment2==1
+estadd r(ndistinct)
+// Tabulate stats
+esttab, cell("mean(fmt(%9.1fc)) sd") unstack ///
+	mlabels("Not affiliate" "Affiliate" "Affiliate of non TH" "Affiliate of TH", span) ///
+	collabels(Mean SD) ///
+	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
 *===============================================================================
 * Impact analysis
