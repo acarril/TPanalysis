@@ -42,7 +42,7 @@ egen pretreat1 = max(dj1850affiliate) if year < 2011, by(id)
 egen treatment1 = max(pretreat1), by(id)
 drop pretreat1
 replace treatment1 = 0 if missing(treatment1)
-label var treatment1 "Treatment 1"
+label var treatment1 "Comparison 1"
 label values treatment1 treatment
 
 * Define treatment2 subgroup: 
@@ -54,7 +54,7 @@ label values treatment1 treatment
 egen pretreat2 = max(taxhaven_SII) if year < 2011 & treatment1 == 1, by(id)
 egen treatment2 = max(pretreat2), by(id)
 drop pretreat2
-lab var treatment2 "Treatment 2"
+lab var treatment2 "Comparison 2"
 lab values treatment2 treatment
 
 * Define treatment3 subgroup 
@@ -62,7 +62,7 @@ lab values treatment2 treatment
 gen treatment3 = .
 replace treatment3 = 0 if treatment1 == 0 // control if non-affiliate
 replace treatment3 = 1 if treatment2 == 0 // treated if affiliate not in TH
-label var treatment3 "Treatment 3"
+label var treatment3 "Comparison 3"
 label values treatment3 treatment
 
 *-------------------------------------------------------------------------------
