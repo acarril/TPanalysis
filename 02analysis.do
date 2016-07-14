@@ -50,7 +50,6 @@ drop if `nyear' != r(r)
 local depvars ///
 	f50c91 /// Total taxes paid
 	f22c20 /// Income tax
-	/*
 	dividends royalties interests services /// from f50
 	f22c628 /// Sales
 	f22c630 /// Costs of goods sold
@@ -58,7 +57,6 @@ local depvars ///
 	f22c636 /// Earnings
 	f29c20 /// Exports
 	f29imports /// Imports
-	*/
 
 // Number of treatments
 unab treatments : treatment*
