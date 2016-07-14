@@ -17,7 +17,7 @@ set scheme lean1
 cd D:\tpricing\analysis\
 
 local ddplots 	= 1
-local ddtables 	= 1
+local ddtables 	= 0
 
 * Set key years for analysis 
 *-------------------------------------------------------------------------------
@@ -37,12 +37,12 @@ xtset id year
 
 * Force balanced panel
 *-------------------------------------------------------------------------------
-
+/*
 tempvar nyear
 bys id: gen `nyear' = [_N]
 quietly tab year
 drop if `nyear' != r(r)
-
+*/
 
 * Periods, treatment and covariates locals
 *-------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, replace booktabs ///
 	cell(b(fmt(%9.0fc)) pct(fmt(1) par)) nonumber label collabels(none) ///
 	stats(N, label("Total")) alignment(r)
 
-* Tab: Balance tables for summary stats of all treatment groups in baseyear
+* Tab: Summary stats of all comparisons in baseyear
 *-------------------------------------------------------------------------------
 foreach treatvar of varlist treatment* {
 	eststo clear
@@ -145,7 +145,7 @@ if `ddplots' == 1 {
 	local ddplot_opts timevar(year) baseperiod(`baseyear') ///
 		plotopts(xline(3.5 4.5, lpattern(shortdash)))
 
-	forvalues t = 1/3 {
+	forvalues t = 1/`N_treatments' {
 		// Loop over all dependant variables
 		foreach yvar in `depvars' {
 			// Mean:
@@ -165,7 +165,7 @@ if `ddplots' == 1 {
 			// Median (q50):
 			qui qreg `yvar'_w i.year#i.treatment`t' i.year i.treatment`t', vce(robust)
 			ddplot treatment`t', `ddplot_opts'
-			graph export "figs/ddplot__treat`t'_`yvar'_q50.pdf", as(pdf) replace
+			graph export "figs/ddplot_treat`t'_`yvar'_q50.pdf", as(pdf) replace
 		}
 	}
 }

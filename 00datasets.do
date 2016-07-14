@@ -406,6 +406,7 @@ use output/firm_chars, clear
 foreach dta in dj1850_collapsed f22 f29 f50 {
 	merge 1:1 year id using output/`dta', generate(_merge_`dta')
 	drop if year > 2013
+	sort id year
 }
 	eststo clear
 	* Tabulate number of firms per year
@@ -416,8 +417,19 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 
 * Data trimming
 *-------------------------------------------------------------------------------
-// Keep only medium or large firms under full tax reporting scheme
-keep if (size == 4 | size == 5)
+// Keep firms that reported F22
+keep if _merge_f22 >= 2
+	* Tabulate number of firms per year
+	eststo: estpost tabstat id if _merge_f22 >= 2, by(year) stats(count) nototal
+	* Add scalar with distinct values (requieres distinct package)
+	distinct id if _merge_f22 >= 2
+	estadd r(ndistinct)
+
+// Keep firms that were medium or large at baseline
+gen aux1 = (size == 4 | size == 5) if year == 2009
+egen aux2 = max(aux1), by(id)
+keep if aux2 == 1
+drop aux*
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
@@ -425,26 +437,20 @@ keep if (size == 4 | size == 5)
 	estadd r(ndistinct)
 	
 // Keep only firms under full tax reporting scheme
-keep if cocoregtributario == 100000
-drop cocoregtributario // no longer needed, has unique value now
+gen aux1 = (cocoregtributario == 100000) if year == 2009
+egen aux2 = max(aux1), by(id)
+keep if aux2 == 1
+drop aux* cocoregtributario
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
 	distinct id
 	estadd r(ndistinct)
 
-// Keep firms that reported dj1850, which is used to determine affiliation/treatment
-keep if _merge_dj1850_collapsed >= 2
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id if _merge_dj1850_collapsed >= 2, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id if _merge_dj1850_collapsed >= 2
-	estadd r(ndistinct)
-
 // Tabulate trimming steps
 esttab using tabs/Nfirms_trimmingsteps.tex, replace booktabs ///
 	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
-	mlabels("All" "\$>\$Medium" "Full scheme" "DJ1850") ///
+	mlabels("All" "F22" "\$>\$Medium" "Full scheme") ///
 	scalar("ndistinct Distinct") sfmt(%12.0gc) noobs
 
 * Replace missing values for zeroes. 
@@ -469,6 +475,10 @@ foreach var of varlist `monetary_vars' {
 	qui ppp `var', exp(3) replace // thousands of USD
 	nois _dots `rep++' 0
 }
+
+* Update treatment groups
+*-------------------------------------------------------------------------------
+replace treatment1 = 0 if missing(treatment1)
 
 *-------------------------------------------------------------------------------
 * Save firm level-dataset
