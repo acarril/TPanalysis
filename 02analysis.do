@@ -17,7 +17,7 @@ set scheme lean1
 cd D:\tpricing\analysis\
 
 local ddplots 	= 1
-local ddtables 	= 0
+local ddtables 	= 1
 
 * Set key years for analysis 
 *-------------------------------------------------------------------------------
@@ -37,10 +37,12 @@ xtset id year
 
 * Force balanced panel
 *-------------------------------------------------------------------------------
+
 tempvar nyear
 bys id: gen `nyear' = [_N]
 quietly tab year
 drop if `nyear' != r(r)
+
 
 * Periods, treatment and covariates locals
 *-------------------------------------------------------------------------------
