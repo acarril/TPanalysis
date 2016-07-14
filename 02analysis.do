@@ -157,6 +157,7 @@ if `ddplots' == 1 {
 			// Pr(y>0):
 			tempvar `yvar'_bin
 			gen ``yvar'_bin' = (`yvar' > 0 & !missing(`yvar'))
+			_crcslbl ``yvar'_bin' `yvar'
 			qui xtreg ``yvar'_bin' i.year#i.treatment`t' i.year i.treatment`t', ///
 				fe vce(cluster id)
 			ddplot treatment`t', `ddplot_opts'
