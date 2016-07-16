@@ -476,9 +476,30 @@ foreach var of varlist `monetary_vars' {
 	nois _dots `rep++' 0
 }
 
-* Update treatment groups
+* Define comparison (treatment) groups
 *-------------------------------------------------------------------------------
-replace treatment1 = 0 if missing(treatment1)
+
+// Affiliates vs. non affiliates 
+gen comp1 = (dj1850affiliate == 1)
+
+// Affiliates of non tax havens vs. non affiliates
+gen comp2 = (dj1850affiliate == 1) if dj1850affiliate_TH != 1
+
+// Affiliates of tax havens vs. non affiliates
+gen comp3 = (dj1850affiliate == 1) if dj1850affiliate_TH == 1
+
+// Affiliates of tax havens vs. affiliates of non tax havens
+gen comp4 = (dj1850affiliate_TH == 1) if dj1850affiliate == 1
+
+// Affiliates of tax havens vs. (affiliates of non tax havens & non affiliates)
+gen comp5 = (dj1850affiliate_TH == 1)
+
+// Apply variable and value labels
+label define comp 0 "Control" 1 "Treated"
+forvalues i = 1/5 {
+	label var comp`i' "Comparison `i'"
+	label values comp`i' comp
+}
 
 *-------------------------------------------------------------------------------
 * Save firm level-dataset
