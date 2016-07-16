@@ -52,13 +52,11 @@ foreach v of var * {
 // Collapse
 collapse ///
 	(sum) dj1850baseimponible - dj1850montoliquido dividends - others ///
-	(mean) dj1850affiliate* treatment*, by(id year)
+	(mean) dj1850affiliate*, by(id year)
 // Paste the saved labels
 foreach v of var * {
 	label var `v' "`l`v''"
 }
-// Apply treatment value labels
-label values treatment* treatment
 // Save
 label data "dj1850 collapsed at the firm year level"
 compress
