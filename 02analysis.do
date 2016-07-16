@@ -59,8 +59,8 @@ local depvars ///
 	f29imports /// Imports
 
 // Number of treatments
-unab treatments : treatment*
-local N_treatments : list sizeof treatments
+unab comps : comp*
+local N_comps : list sizeof comps
 
 // Extract periods
 levelsof year, local(years)
@@ -88,11 +88,11 @@ foreach v of varlist `depvars' {
 * Tab: Observations by treatment group in baseyear
 *-------------------------------------------------------------------------------
 eststo clear
-foreach treatvar of varlist treatment* {
+foreach treatvar of varlist comp* {
 	eststo: estpost tab `treatvar' if year == `baseyear', nototal
 }
-esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, replace booktabs ///
-	cell(b(fmt(%9.0fc)) pct(fmt(1) par)) nonumber label collabels(none) ///
+esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, booktabs replace ///
+	cell(b(fmt(%9.0fc)) pct(fmt(1) par)) nomtitle collabels(none) ///
 	stats(N, label("Total")) alignment(r)
 
 * Tab: Summary stats of all comparisons in baseyear
