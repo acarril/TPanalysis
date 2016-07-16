@@ -41,9 +41,6 @@ label var dj1850affiliate_TH "Dummy indicating affiliation to TH by firm"
 * Define treatment (comparison) variables
 *-------------------------------------------------------------------------------
 
-// Value label for treatments
-label define treatment 0 "Control" 1 "Treated"
-
 // Affiliates vs. non affiliates 
 gen treatment1 = dj1850affiliate
 
@@ -56,7 +53,11 @@ gen treatment3 = (dj1850affiliate == 1) if dj1850affiliate_TH == 1
 // Affiliates of tax havens vs. affiliates of non tax havens
 gen treatment4 = (dj1850affiliate_TH == 1) if dj1850affiliate == 1
 
+// Affiliates of tax havens vs. (affiliates of non tax havens & non affiliates)
+gen treatment5 = (dj1850affiliate_TH == 1)
+
 // Apply variable and value labels
+label define treatment 0 "Control" 1 "Treated"
 forvalues i = 1/4 {
 	label var treatment`i' "Comparison `i'"
 	label values treatment`i' treatment
