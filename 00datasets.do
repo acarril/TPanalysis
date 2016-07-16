@@ -495,11 +495,12 @@ gen comp4 = (dj1850affiliate_TH == 1) if dj1850affiliate == 1
 gen comp5 = (dj1850affiliate_TH == 1)
 
 // Apply variable and value labels
-label define comp 0 "Control" 1 "Treated"
-forvalues i = 1/5 {
-	label var comp`i' "Comparison `i'"
-	label values comp`i' comp
+foreach v of varlist comp* {
+	local N = `N'+1
+	label var `v' "Comparison `N'"
 }
+label define comp 0 "Control" 1 "Treated"
+label values comp* comp
 
 *-------------------------------------------------------------------------------
 * Save firm level-dataset
