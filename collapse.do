@@ -87,4 +87,5 @@ label values treatment* treatment
 // Save
 label data "dj1850 collapsed at the firm year level"
 compress
+sort id year
 save output/dj1850_collapsed, replace
