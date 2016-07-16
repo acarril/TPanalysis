@@ -486,7 +486,7 @@ gen comp1 = (dj1850affiliate == 1)
 gen comp2 = (dj1850affiliate == 1) if dj1850affiliate_TH != 1
 
 // Affiliates of tax havens vs. non affiliates
-gen comp3 = (dj1850affiliate == 1) if dj1850affiliate_TH == 1
+gen comp3 = (dj1850affiliate == 1) if dj1850affiliate_TH != 0
 
 // Affiliates of tax havens vs. affiliates of non tax havens
 gen comp4 = (dj1850affiliate_TH == 1) if dj1850affiliate == 1
