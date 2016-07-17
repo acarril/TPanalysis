@@ -23,6 +23,8 @@ cd D:\tpricing\analysis\
 *-------------------------------------------------------------------------------
 run do/auxil/ppp.ado // allows transforming variables to current USD exp(X)
 
+* Chiqi
+
 *-------------------------------------------------------------------------------
 * Build switches (set to 1 in order to build corresponding dataset)
 *-------------------------------------------------------------------------------
