@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 0
+local ddplots 	= 1
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -145,28 +145,28 @@ if `ddplots' == 1 {
 	local ddplot_opts timevar(year) baseperiod(`baseyear') ///
 		plotopts(xline(3.5 4.5, lpattern(shortdash)))
 
-	forvalues t = 1/`N_treatments' {
+	forvalues t = 1/`N_comps' {
 		// Loop over all dependant variables
 		foreach yvar in `depvars' {
 			// Mean:
-			qui xtreg `yvar'_w i.year#i.treatment`t' i.year i.treatment`t', ///
+			qui xtreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', ///
 				fe vce(cluster id)
-			ddplot treatment`t', `ddplot_opts'
-			graph export "figs/ddplot_treat`t'_`yvar'_mean.pdf", as(pdf) replace
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_`yvar'_mean.pdf", as(pdf) replace
 			
 			// Pr(y>0):
 			tempvar `yvar'_bin
 			gen ``yvar'_bin' = (`yvar' > 0 & !missing(`yvar'))
 			_crcslbl ``yvar'_bin' `yvar'
-			qui xtreg ``yvar'_bin' i.year#i.treatment`t' i.year i.treatment`t', ///
+			qui xtreg ``yvar'_bin' i.year#i.comp`t' i.year i.comp`t', ///
 				fe vce(cluster id)
-			ddplot treatment`t', `ddplot_opts'
-			graph export "figs/ddplot_treat`t'_`yvar'_prob.pdf", as(pdf) replace
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_`yvar'_prob.pdf", as(pdf) replace
 			
 			// Median (q50):
-			qui qreg `yvar'_w i.year#i.treatment`t' i.year i.treatment`t', vce(robust)
-			ddplot treatment`t', `ddplot_opts'
-			graph export "figs/ddplot_treat`t'_`yvar'_q50.pdf", as(pdf) replace
+			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
 		}
 	}
 }
