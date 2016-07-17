@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 1
+local ddplots 	= 0
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -133,31 +133,37 @@ foreach treatvar of varlist treatment* {
 */
 ****
 
+local non_affiliates year == `baseyear' & dj1850affiliate != 1
+local all_affiliates year == `baseyear' & dj1850affiliate == 1
+local affiliates_NTH year == `baseyear' & dj1850affiliate_TH == 0
+local affiliates_TH year == `baseyear' & dj1850affiliate_TH == 1
+
 eststo clear
-// No affiliates
-eststo: estpost tabstat f50c91 f22c20 dividends if treatment1==0, ///
+// Non affiliates
+eststo: estpost tabstat f50c91 f22c20 dividends if `non_affiliates', ///
 	stats(mean sd) columns(statistics)
-distinct id if treatment1==0
+distinct id if `non_affiliates'
 estadd r(ndistinct)
 // Any affiliate
-eststo: estpost tabstat f50c91 f22c20 dividends if treatment1==1, ///
+eststo: estpost tabstat f50c91 f22c20 dividends if `all_affiliates', ///
 	stats(mean sd) columns(statistics)
-distinct id if treatment1==1
+distinct id if `all_affiliates'
 estadd r(ndistinct)
 // Affiliate of non TH
-eststo: estpost tabstat f50c91 f22c20 dividends if treatment3==1, ///
+eststo: estpost tabstat f50c91 f22c20 dividends if `affiliates_NTH', ///
 	stats(mean sd) columns(statistics)
-distinct id if treatment3==1
+distinct id if `affiliates_NTH'
 estadd r(ndistinct)
 // Affiliate of TH
-eststo: estpost tabstat f50c91 f22c20 dividends if treatment2==1, ///
+eststo: estpost tabstat f50c91 f22c20 dividends if `affiliates_TH', ///
 	stats(mean sd) columns(statistics)
-distinct id if treatment2==1
+distinct id if `affiliates_TH'
 estadd r(ndistinct)
 // Tabulate stats
-esttab, cell("mean(fmt(%9.1fc)) sd") unstack ///
-	mlabels("Not affiliate" "Affiliate" "Affiliate of non TH" "Affiliate of TH", span) ///
-	collabels(Mean SD) ///
+esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
+	cell("mean(fmt(%9.1fc)) sd") unstack alignment(rr) ///
+	mlabels("Non affiliates" "Affiliates" "Affiliates of non TH" "Affiliates of TH", span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
+	collabels(Mean SD) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
 *===============================================================================
