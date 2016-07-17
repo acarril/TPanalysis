@@ -95,43 +95,8 @@ esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, booktabs replace ///
 	cell(b(fmt(%9.0fc)) pct(fmt(1) par)) nomtitle collabels(none) ///
 	stats(N, label("Total")) alignment(r)
 
-* Tab: Summary stats of all comparisons in baseyear
+* Tab: Summary stats of by affiliation group at baseline (needs distinct package)
 *-------------------------------------------------------------------------------
-/*
-foreach treatvar of varlist treatment* {
-	eststo clear
-	eststo: qui estpost ttest `depvars_w' if year == `baseyear', ///
-		by(`treatvar') unequal welch
-
-	// Define matrices with various stats: median, standard deviation, N of firms
-	qui tabstat `depvars_w' if year == `baseyear', by(`treatvar') stats(p50 sd n) save
-	matrix C = r(Stat1)
-	matrix T = r(Stat2)
-	quietly {
-		// Vectors of medians and standard deviations
-		estadd matrix p50_1 = C[1...,1...]
-		estadd matrix p50_2 = T[1...,1...]
-		estadd matrix sd_1 = C[2...,1...]
-		estadd matrix sd_2 = T[2...,1...]
-		// Scalars with number of firms
-		estadd scalar n_1 = C[3,1]
-		estadd scalar n_2 = T[3,1]
-	}
-	// Tabulate statistics
-	esttab using tabs/balancetab_`treatvar'_`baseyear'.tex, replace booktabs ///
-		prehead( ///
-			"{" ///
-			"\begin{tabular}{l*{@span}{r}}" ///
-			"\toprule" ///
-			" & \multicolumn{3}{c}{Control} & \multicolumn{3}{c}{Treated} & \multicolumn{3}{c}{Difference} \\" ///
-			" \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10} ") ///
-		cell((mu_1(fmt(%12.1gc)) sd_1 p50_1 mu_2 sd_2 p50_2 b se t(fmt(2)))) ///
-		collabels(Mean SD Median Mean SD Median Mean SE "\$t\$-stat") ///
-		nonumbers nomtitles label ///
-		stats(n_1 null null n_2, fmt(%9.0gc %9.0gc) layout("@ @ @ @") labels("Nº Firms"))
-}
-*/
-****
 
 local non_affiliates year == `baseyear' & dj1850affiliate != 1
 local all_affiliates year == `baseyear' & dj1850affiliate == 1
@@ -140,30 +105,31 @@ local affiliates_TH year == `baseyear' & dj1850affiliate_TH == 1
 
 eststo clear
 // Non affiliates
-eststo: estpost tabstat f50c91 f22c20 dividends if `non_affiliates', ///
-	stats(mean sd) columns(statistics)
+eststo: estpost tabstat `depvars' if `non_affiliates', ///
+	stats(mean sd median) columns(statistics)
 distinct id if `non_affiliates'
 estadd r(ndistinct)
 // Any affiliate
-eststo: estpost tabstat f50c91 f22c20 dividends if `all_affiliates', ///
-	stats(mean sd) columns(statistics)
+eststo: estpost tabstat `depvars' if `all_affiliates', ///
+	stats(mean sd median) columns(statistics)
 distinct id if `all_affiliates'
 estadd r(ndistinct)
 // Affiliate of non TH
-eststo: estpost tabstat f50c91 f22c20 dividends if `affiliates_NTH', ///
-	stats(mean sd) columns(statistics)
+eststo: estpost tabstat `depvars' if `affiliates_NTH', ///
+	stats(mean sd median) columns(statistics)
 distinct id if `affiliates_NTH'
 estadd r(ndistinct)
 // Affiliate of TH
-eststo: estpost tabstat f50c91 f22c20 dividends if `affiliates_TH', ///
-	stats(mean sd) columns(statistics)
+eststo: estpost tabstat `depvars' if `affiliates_TH', ///
+	stats(mean sd median) columns(statistics)
 distinct id if `affiliates_TH'
 estadd r(ndistinct)
+
 // Tabulate stats
 esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
-	cell("mean(fmt(%9.1fc)) sd") unstack alignment(rr) ///
+	cell("mean(fmt(%9.0fc)) sd p50") unstack label alignment(rrr) ///
 	mlabels("Non affiliates" "Affiliates" "Affiliates of non TH" "Affiliates of TH", span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
-	collabels(Mean SD) nonumber ///
+	collabels(Mean SD Median) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
 *===============================================================================
