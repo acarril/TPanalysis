@@ -104,67 +104,27 @@ local NTH_affiliates year == `baseyear' & dj1850affiliate_TH == 0
 local TH_affiliates year == `baseyear' & dj1850affiliate_TH == 1
 
 eststo clear
-
-// Non affiliates
-eststo: estpost tabstat `depvars' if `non_affiliates', ///
-	stats(mean sd median) columns(statistics)
-
-distinct id if `non_affiliates'
-estadd r(ndistinct)
-
-foreach stat in mean sd {
-	qui tabstat `depvars_w' if `non_affiliates', stats(`stat') save
-	matrix A = r(StatTotal)
-	matrix colnames A = `depvars'
-	estadd matrix `stat'_w = A
-}
-
-// Any affiliate
-eststo: estpost tabstat `depvars' if `all_affiliates', ///
-	stats(mean sd median) columns(statistics)
-
-distinct id if `all_affiliates'
-estadd r(ndistinct)
-
-foreach stat in mean sd {
-	qui tabstat `depvars_w' if `all_affiliates', stats(`stat') save
-	matrix A = r(StatTotal)
-	matrix colnames A = `depvars'
-	estadd matrix `stat'_w = A
-}
-
-// Affiliate of non TH
-eststo: estpost tabstat `depvars' if `NTH_affiliates', ///
-	stats(mean sd median) columns(statistics)
-
-distinct id if `NTH_affiliates'
-estadd r(ndistinct)
-
-foreach stat in mean sd {
-	qui tabstat `depvars_w' if `NTH_affiliates', stats(`stat') save
-	matrix A = r(StatTotal)
-	matrix colnames A = `depvars'
-	estadd matrix `stat'_w = A
-}
-
-// Affiliate of TH
-eststo: estpost tabstat `depvars' if `TH_affiliates', ///
-	stats(mean sd median) columns(statistics)
-
-distinct id if `TH_affiliates'
-estadd r(ndistinct)
-
-foreach stat in mean sd {
-	qui tabstat `depvars_w' if `TH_affiliates', stats(`stat') save
-	matrix A = r(StatTotal)
-	matrix colnames A = `depvars'
-	estadd matrix `stat'_w = A
+foreach group in non all NTH TH {
+	// Post main summary statistics:
+	eststo: estpost tabstat `depvars' if ``group'_affiliates', ///
+		stats(mean sd median) columns(statistics)
+	// Scalar with number of firms:
+	distinct id if ``group'_affiliates'
+	estadd r(ndistinct)
+	// Winsorized mean and SD:
+	foreach stat in mean sd {
+		qui tabstat `depvars_w' if ``group'_affiliates', stats(`stat') save
+		matrix A = r(StatTotal)
+		matrix colnames A = `depvars'
+		estadd matrix `stat'_w = A
+	}
 }
 
 // Tabulate stats
 esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
 	cell("mean(fmt(%9.0fc)) mean_w p50" "sd(par) sd_w(par)") unstack label alignment(rrr) ///
-	mlabels("Non affiliates" "Affiliates" "Affiliates of non Tax Havens" "Affiliates of Tax Havens", span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
+	mlabels("Non affiliates" "Affiliates" "Affiliates of non Tax Havens" "Affiliates of Tax Havens", ///
+		span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
 	collabels(Mean "W. Mean" Median) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
