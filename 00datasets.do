@@ -205,7 +205,7 @@ if `f22' == 1 {
 	lab var id "Firm ID"
 	lab var year "Year"
 	lab var f22c18 "Global Complementary Tax"
-	lab var f22c19 "Fiscal Debt (negative savings)"
+	lab var f22c19 "Fiscal debt (negative savings)"
 	lab var f22c20 "Income tax"
 	lab var f22c87 "Credit remanent"
 	lab var f22c91 "Late payment surcharge"
@@ -215,7 +215,7 @@ if `f22' == 1 {
 	label var f22c629 "Interest income"
 	label var f22c651 "Other revenue"
 	label var f22c633 "Interest expenses"
-	label var f22c630 "Costs of Goods Sold"
+	label var f22c630 "Costs of goods sold"
 	label var f22c631 "Wages"
 	label var f22c636 "Earnings"
 
