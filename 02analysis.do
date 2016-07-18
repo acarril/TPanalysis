@@ -108,10 +108,10 @@ foreach group in non all NTH TH {
 	// Post main summary statistics:
 	eststo: estpost tabstat `depvars' if ``group'_affiliates', ///
 		stats(mean sd median) columns(statistics)
-	// Scalar with number of firms:
+	// Add scalar with number of firms:
 	distinct id if ``group'_affiliates'
 	estadd r(ndistinct)
-	// Winsorized mean and SD:
+	// Add winsorized mean and SD:
 	foreach stat in mean sd {
 		qui tabstat `depvars_w' if ``group'_affiliates', stats(`stat') save
 		matrix A = r(StatTotal)
@@ -123,7 +123,7 @@ foreach group in non all NTH TH {
 // Tabulate stats
 esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
 	cell("mean(fmt(%9.0fc)) mean_w p50" "sd(par) sd_w(par)") unstack label alignment(rrr) ///
-	mlabels("Non affiliates" "Affiliates" "Affiliates of non Tax Havens" "Affiliates of Tax Havens", ///
+	mlabels("Non affiliates" "Affiliates" "Affiliates of non tax havens" "Affiliates of tax havens", ///
 		span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
 	collabels(Mean "W. Mean" Median) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
