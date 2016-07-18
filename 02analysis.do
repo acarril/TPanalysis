@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 1
+local ddplots 	= 0
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -100,36 +100,72 @@ esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, booktabs replace ///
 
 local non_affiliates year == `baseyear' & dj1850affiliate != 1
 local all_affiliates year == `baseyear' & dj1850affiliate == 1
-local affiliates_NTH year == `baseyear' & dj1850affiliate_TH == 0
-local affiliates_TH year == `baseyear' & dj1850affiliate_TH == 1
+local NTH_affiliates year == `baseyear' & dj1850affiliate_TH == 0
+local TH_affiliates year == `baseyear' & dj1850affiliate_TH == 1
 
 eststo clear
+
 // Non affiliates
 eststo: estpost tabstat `depvars' if `non_affiliates', ///
 	stats(mean sd median) columns(statistics)
+
 distinct id if `non_affiliates'
 estadd r(ndistinct)
+
+foreach stat in mean sd {
+	qui tabstat `depvars_w' if `non_affiliates', stats(`stat') save
+	matrix A = r(StatTotal)
+	matrix colnames A = `depvars'
+	estadd matrix `stat'_w = A
+}
+
 // Any affiliate
 eststo: estpost tabstat `depvars' if `all_affiliates', ///
 	stats(mean sd median) columns(statistics)
+
 distinct id if `all_affiliates'
 estadd r(ndistinct)
+
+foreach stat in mean sd {
+	qui tabstat `depvars_w' if `all_affiliates', stats(`stat') save
+	matrix A = r(StatTotal)
+	matrix colnames A = `depvars'
+	estadd matrix `stat'_w = A
+}
+
 // Affiliate of non TH
-eststo: estpost tabstat `depvars' if `affiliates_NTH', ///
+eststo: estpost tabstat `depvars' if `NTH_affiliates', ///
 	stats(mean sd median) columns(statistics)
-distinct id if `affiliates_NTH'
+
+distinct id if `NTH_affiliates'
 estadd r(ndistinct)
+
+foreach stat in mean sd {
+	qui tabstat `depvars_w' if `NTH_affiliates', stats(`stat') save
+	matrix A = r(StatTotal)
+	matrix colnames A = `depvars'
+	estadd matrix `stat'_w = A
+}
+
 // Affiliate of TH
-eststo: estpost tabstat `depvars' if `affiliates_TH', ///
+eststo: estpost tabstat `depvars' if `TH_affiliates', ///
 	stats(mean sd median) columns(statistics)
-distinct id if `affiliates_TH'
+
+distinct id if `TH_affiliates'
 estadd r(ndistinct)
+
+foreach stat in mean sd {
+	qui tabstat `depvars_w' if `TH_affiliates', stats(`stat') save
+	matrix A = r(StatTotal)
+	matrix colnames A = `depvars'
+	estadd matrix `stat'_w = A
+}
 
 // Tabulate stats
 esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
-	cell("mean(fmt(%9.0fc)) sd p50") unstack label alignment(rrr) ///
-	mlabels("Non affiliates" "Affiliates" "Affiliates of non TH" "Affiliates of TH", span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
-	collabels(Mean SD Median) nonumber ///
+	cell("mean(fmt(%9.0fc)) mean_w p50" "sd(par) sd_w(par)") unstack label alignment(rrr) ///
+	mlabels("Non affiliates" "Affiliates" "Affiliates of non Tax Havens" "Affiliates of Tax Havens", span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
+	collabels(Mean "W. Mean" Median) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
 *===============================================================================
@@ -153,7 +189,7 @@ if `ddplots' == 1 {
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_mean.pdf", as(pdf) replace
-			
+
 			// Pr(y>0):
 			tempvar `yvar'_bin
 			gen ``yvar'_bin' = (`yvar' > 0 & !missing(`yvar'))
