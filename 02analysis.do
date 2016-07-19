@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 0
+local ddplots 	= 1
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -48,8 +48,9 @@ drop if `nyear' != r(r)
 *-------------------------------------------------------------------------------
 // Outcome variables
 local depvars ///
-	f50c91 /// Total taxes paid
 	f22c20 /// Income tax
+	/*
+	f50c91 /// Total taxes paid
 	dividends royalties interests services /// from f50
 	f22c628 /// Sales
 	f22c630 /// Costs of goods sold
@@ -57,7 +58,7 @@ local depvars ///
 	f22c636 /// Earnings
 	f29c20 /// Exports
 	f29imports /// Imports
-
+	*/
 // Number of treatments
 unab comps : comp*
 local N_comps : list sizeof comps
@@ -131,7 +132,7 @@ esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
 *===============================================================================
 * Impact analysis
 *===============================================================================
-
+drop *_mode
 *-------------------------------------------------------------------------------
 * Difference-in-Differences plots
 *-------------------------------------------------------------------------------
@@ -145,8 +146,8 @@ if `ddplots' == 1 {
 		// Loop over all dependant variables
 		foreach yvar in `depvars' {
 			// Mean:
-			qui xtreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', ///
-				fe vce(cluster id)
+			xtreg `yvar'_w ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
+				re vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_mean.pdf", as(pdf) replace
 

@@ -420,9 +420,9 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 * Data trimming
 *-------------------------------------------------------------------------------
 // Keep firms that reported F22
-keep if _merge_f22 >= 2
+keep if _merge_f22 >= 2 & !missing(_merge_f22)
 	* Tabulate number of firms per year
-	eststo: estpost tabstat id if _merge_f22 >= 2, by(year) stats(count) nototal
+	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
 	distinct id if _merge_f22 >= 2
 	estadd r(ndistinct)
@@ -449,10 +449,24 @@ drop aux* cocoregtributario
 	distinct id
 	estadd r(ndistinct)
 
+// Fill gaps in panel data with zeroes
+xtset id year
+tsfill, full
+foreach v of varlist region size industry_sector {
+	egen `v'_mode = mode(`v'), by(id)
+	replace `v' = `v'_mode if missing(`v')
+	drop `v'_mode
+}
+	* Tabulate number of firms per year
+	eststo: estpost tabstat id, by(year) stats(count) nototal
+	* Add scalar with distinct values (requieres distinct package)
+	distinct id
+	estadd r(ndistinct)
+
 // Tabulate trimming steps
 esttab using tabs/Nfirms_trimmingsteps.tex, replace booktabs ///
 	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
-	mlabels("All" "F22" "\$>\$Medium" "Full scheme") ///
+	mlabels("All" "F22" "\$>\$Medium" "Full scheme" "Balanced") ///
 	scalar("ndistinct Distinct") sfmt(%12.0gc) noobs
 
 * Replace missing values for zeroes. 
