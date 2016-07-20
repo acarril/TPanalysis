@@ -207,18 +207,19 @@ if `ddtables' == 1 {
 	}
 }
 
+*-------------------------------------------------------------------------------
+* Propensity Score Matching estimations
+*-------------------------------------------------------------------------------
+psestimate comp4 if year==2009, notry(id year comp*) genlor(lnodds4)
 
-/*
-********************************************************************************
-// D-D pre/post. FE: firms
-xtreg `depvars' treatment2 ib2009.year treatmentXpost, fe vce(cluster id)
-// D-D annual. FE: firms
-xtreg `depvars' i.treatment2##i.year, fe vce(cluster id)
+gen u = runiform()
+sort u
+drop u
 
+summ lnodds if year == 2009
+local caliper_pct = .2
+local caliper = `caliper_pct'*`r(sd)'
 
-// D-D pre/post. FE: firms, year
-xtreg `depvars' i.treatment2##i.post i.year, fe vce(cluster id)
+psmatch comp4 if year == 2009, pscore(lnodds4) noreplacement descending caliper(`caliper')
 
-// Difference in Differences. FE: firms
-*xtreg `depvars' i.treatment2##ib2009.year, fe vce(cluster id)
-*/
+egen w4_psm = max(_weight), by(id)
