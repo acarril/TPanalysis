@@ -455,14 +455,14 @@ drop aux*
 gen aux1 = (cocoregtributario == 100000) if year == 2009
 egen aux2 = max(aux1), by(id)
 keep if aux2 == 1
-drop aux* cocoregtributario
+drop aux*
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
 	distinct id
 	estadd r(ndistinct)
 	
-* Tab: firms in/out f22 by affiliation status
+* Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
 gen inf22 = (_merge_f22 == 3)
 lab var inf22 "In F22"
@@ -496,8 +496,8 @@ esttab a1 a2 using tabs/inout_f22.tex, replace booktabs ///
 		labels("Distinct" " ") ///
 		layout(@ (@)) ///
 		)
-	
-* Tab: firms in/out of minimum size requirement
+
+* Tab: firms in sample by full tax reporting requirement and affiliation status
 *-------------------------------------------------------------------------------
 gen is_medlarge = (size >= 4 & !missing(size))
 lab var is_medlarge "Is medium or large"
@@ -532,6 +532,41 @@ esttab b1 b2 using tabs/is_medlarge.tex, replace booktabs ///
 		layout(@ (@)) ///
 		)
 
+* Tab: firms in sample by size threshold and affiliation status
+*-------------------------------------------------------------------------------
+gen is_fulltax = (cocoregtributario == 100000)
+lab var is_fulltax "Full tax reporting scheme"
+lab define is_fulltax 0 "Incomplete tax report" 1 "Complete tax report"
+lab values is_fulltax is_fulltax
+
+eststo b1: estpost tabulate year is_fulltax if dj1850affiliate != 1, nototal
+	distinct id if is_fulltax == 0 & dj1850affiliate != 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate != 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+eststo b2: estpost tabulate year is_fulltax if dj1850affiliate == 1, nototal
+	distinct id if is_fulltax == 0 & dj1850affiliate == 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate == 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+esttab b1 b2 using tabs/is_fulltax.tex, replace booktabs ///
+	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
+	unstack nonumbers collabels(none) noobs ///
+	mlabels("Non affiliates" "Affiliates", ///
+		span prefix(\multicolumn{@span}{c}{) suffix(}) ///
+		erepeat(\cmidrule(lr){@span})) ///
+	stats(ndistinct pct_out, ///
+		fmt(%12.0gc a1) ///
+		labels("Distinct" " ") ///
+		layout(@ (@)) ///
+		)
+		
 // Fill gaps in panel data with zeroes
 xtset id year
 tsfill, full
