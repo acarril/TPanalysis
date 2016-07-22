@@ -85,12 +85,18 @@ foreach t in `periods' {
 	// We estimate the second difference between the treated and 
 	// the controls. The ", post" option updates b and V matrices
 	// in order to store in the plot matrix
+	
 	quietly nlcom (did: _b[dt] - _b[dc]), post
 	
-	matrix define b = e(b)
+	if `t' < `baseperiod' {
+		matrix define b = e(b)*.5
+	}
+	else matrix define b = e(b)
 	matrix define V = e(V)
 	
 	// We store the diff in diff and its confidence interval
+	
+	matrix did[`t'-`prefirst',1] = b[1,1]
 	matrix did[`t'-`prefirst',1] = b[1,1]
 	matrix errors[`t'-`prefirst',1] = V[1,1]
 	
