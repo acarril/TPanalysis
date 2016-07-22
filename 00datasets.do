@@ -401,6 +401,7 @@ if `customs' == 1 {
 * Consolidate all datasets
 *===============================================================================
 
+*-------------------------------------------------------------------------------
 * Merge all datasets
 *-------------------------------------------------------------------------------
 // Use dj1850 as starting point
@@ -412,55 +413,75 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 }
 save output/rawmerge, replace
 
+*-------------------------------------------------------------------------------
+* Sample trimming
+*-------------------------------------------------------------------------------
 
 use output/rawmerge, clear
-	eststo clear
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id
-	estadd r(ndistinct)
 
+* Locals with conditions for sample trimming
 *-------------------------------------------------------------------------------
-* Data trimming
+local in_f22 (_merge_f22 >= 2 & !missing(_merge_f22))
+local is_medlarge (size == 4 | size == 5)
+local is_fullreport (cocoregtributario == 100000)
+
+* Generate binary variables indicating trimming criteria
 *-------------------------------------------------------------------------------
 
-* Keep firms that reported F22 in any pre-treatment year
-*-------------------------------------------------------------------------------
-gen aux1 = (_merge_f22 >= 2 & !missing(_merge_f22)) if year <= 2009
-egen aux2 = max(aux1), by(id)
-keep if aux2 == 1
+// F22 in any pretreatment year
+gen aux = `in_f22' if year <= 2009
+egen in_f22_pre = max(aux), by(id)
 drop aux*
 
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id if _merge_f22 >= 2
-	estadd r(ndistinct)
+// Size is medium or large in any pretreatment year
+gen aux = `is_medlarge' if year == 2009
+egen is_medlarge_pre = max(aux), by(id)
+drop aux*
 
-* Keep firms that were medium or large at baseline
-*-------------------------------------------------------------------------------
-gen aux1 = (size == 4 | size == 5) if year == 2009
-egen aux2 = max(aux1), by(id)
-keep if aux2 == 1
+// Size is medium or large in any pretreatment year
+gen aux = `is_fullreport' if year == 2009
+egen is_fullreport_pre = max(aux), by(id)
 drop aux*
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id
-	estadd r(ndistinct)
-	
-* Keep only firms under full tax reporting scheme
+
+* Tab: Number of firms by year and trimming step
 *-------------------------------------------------------------------------------
-gen aux1 = (cocoregtributario == 100000) if year == 2009
-egen aux2 = max(aux1), by(id)
-keep if aux2 == 1
-drop aux*
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id
-	estadd r(ndistinct)
+eststo clear
+
+// Number of firms per year in raw sample
+eststo: estpost tabstat id, by(year) stats(count) nototal
+distinct id
+estadd scalar distinct = `r(ndistinct)'
+estadd scalar insample = `r(ndistinct)'
+
+// Firms in F22
+eststo: estpost tabstat id if `in_f22', by(year) stats(count) nototal
+distinct id if `in_f22'
+estadd scalar distinct = `r(ndistinct)'
+distinct id if in_f22_pre == 1
+estadd scalar insample = `r(ndistinct)'
+
+// Medium or large
+eststo: estpost tabstat id if `in_f22' & `is_medlarge', by(year) stats(count) nototal
+distinct id if `in_f22' & `is_medlarge'
+estadd scalar distinct = `r(ndistinct)'
+distinct id if in_f22_pre == 1 & is_medlarge_pre == 1
+estadd scalar insample = `r(ndistinct)'
+
+// Full tax reporting scheme
+eststo: estpost tabstat id if `in_f22' & `is_medlarge' & `is_fullreport', by(year) stats(count) nototal
+distinct id if `in_f22' & `is_medlarge' & `is_fullreport'
+estadd scalar distinct = `r(ndistinct)'
+distinct id if in_f22_pre == 1 & is_medlarge_pre == 1 & is_fullreport_pre == 1
+estadd scalar insample = `r(ndistinct)'
+
+// Tabulate trimming steps
+esttab using tabs/Nfirms_bysamplecriteria.tex, replace booktabs ///
+	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
+	mlabels("All" "F22" "\$>\$Medium" "Full scheme") noobs ///
+	stats(distinct insample, ///
+		fmt(%12.0gc) ///
+		labels("Distinct" "In sample") ///
+		)
 		
 // Fill gaps in panel data with zeroes
 xtset id year
@@ -470,18 +491,6 @@ foreach v of varlist region size industry_sector {
 	replace `v' = `v'_mode if missing(`v')
 	drop `v'_mode
 }
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id
-	estadd r(ndistinct)
-
-// Tabulate trimming steps
-esttab using tabs/Nfirms_trimmingsteps.tex, replace booktabs ///
-	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
-	mlabels("All" "F22" "\$>\$Medium" "Full scheme" "Balanced") ///
-	scalar("ndistinct Distinct") sfmt(%12.0gc) noobs
-eststo clear
 
 * Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
