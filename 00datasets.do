@@ -461,9 +461,31 @@ drop aux*
 	* Add scalar with distinct values (requieres distinct package)
 	distinct id
 	estadd r(ndistinct)
-	
+		
+// Fill gaps in panel data with zeroes
+xtset id year
+tsfill, full
+foreach v of varlist region size industry_sector {
+	egen `v'_mode = mode(`v'), by(id)
+	replace `v' = `v'_mode if missing(`v')
+	drop `v'_mode
+}
+	* Tabulate number of firms per year
+	eststo: estpost tabstat id, by(year) stats(count) nototal
+	* Add scalar with distinct values (requieres distinct package)
+	distinct id
+	estadd r(ndistinct)
+
+// Tabulate trimming steps
+esttab using tabs/Nfirms_trimmingsteps.tex, replace booktabs ///
+	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
+	mlabels("All" "F22" "\$>\$Medium" "Full scheme" "Balanced") ///
+	scalar("ndistinct Distinct") sfmt(%12.0gc) noobs
+eststo clear
+
 * Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
+
 gen inf22 = (_merge_f22 == 3)
 lab var inf22 "In F22"
 lab define inf22 0 "Out F22" 1 "In F22"
@@ -504,7 +526,7 @@ lab var is_medlarge "Is medium or large"
 lab define is_medlarge 0 "Small or less" 1 "Medium or large"
 lab values is_medlarge is_medlarge
 
-eststo b1: estpost tabulate year is_medlarge if dj1850affiliate != 1, nototal
+eststo a1: estpost tabulate year is_medlarge if dj1850affiliate != 1, nototal
 	distinct id if is_medlarge == 0 & dj1850affiliate != 1
 	local distinct_out = `r(ndistinct)'
 	estadd r(ndistinct)
@@ -512,7 +534,7 @@ eststo b1: estpost tabulate year is_medlarge if dj1850affiliate != 1, nototal
 	local distinct_total = `r(ndistinct)'
 	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
 
-eststo b2: estpost tabulate year is_medlarge if dj1850affiliate == 1, nototal
+eststo a2: estpost tabulate year is_medlarge if dj1850affiliate == 1, nototal
 	distinct id if is_medlarge == 0 & dj1850affiliate == 1
 	local distinct_out = `r(ndistinct)'
 	estadd r(ndistinct)
@@ -520,7 +542,7 @@ eststo b2: estpost tabulate year is_medlarge if dj1850affiliate == 1, nototal
 	local distinct_total = `r(ndistinct)'
 	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
 
-esttab b1 b2 using tabs/is_medlarge.tex, replace booktabs ///
+esttab a1 a2 using tabs/is_medlarge.tex, replace booktabs ///
 	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
 	unstack nonumbers collabels(none) noobs ///
 	mlabels("Non affiliates" "Affiliates", ///
@@ -539,7 +561,7 @@ lab var is_fulltax "Full tax reporting scheme"
 lab define is_fulltax 0 "Incomplete tax report" 1 "Complete tax report"
 lab values is_fulltax is_fulltax
 
-eststo b1: estpost tabulate year is_fulltax if dj1850affiliate != 1, nototal
+eststo a1: estpost tabulate year is_fulltax if dj1850affiliate != 1, nototal
 	distinct id if is_fulltax == 0 & dj1850affiliate != 1
 	local distinct_out = `r(ndistinct)'
 	estadd r(ndistinct)
@@ -547,7 +569,7 @@ eststo b1: estpost tabulate year is_fulltax if dj1850affiliate != 1, nototal
 	local distinct_total = `r(ndistinct)'
 	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
 
-eststo b2: estpost tabulate year is_fulltax if dj1850affiliate == 1, nototal
+eststo a2: estpost tabulate year is_fulltax if dj1850affiliate == 1, nototal
 	distinct id if is_fulltax == 0 & dj1850affiliate == 1
 	local distinct_out = `r(ndistinct)'
 	estadd r(ndistinct)
@@ -555,7 +577,7 @@ eststo b2: estpost tabulate year is_fulltax if dj1850affiliate == 1, nototal
 	local distinct_total = `r(ndistinct)'
 	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
 
-esttab b1 b2 using tabs/is_fulltax.tex, replace booktabs ///
+esttab a1 a2 using tabs/is_fulltax.tex, replace booktabs ///
 	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
 	unstack nonumbers collabels(none) noobs ///
 	mlabels("Non affiliates" "Affiliates", ///
@@ -566,26 +588,7 @@ esttab b1 b2 using tabs/is_fulltax.tex, replace booktabs ///
 		labels("Distinct" " ") ///
 		layout(@ (@)) ///
 		)
-		
-// Fill gaps in panel data with zeroes
-xtset id year
-tsfill, full
-foreach v of varlist region size industry_sector {
-	egen `v'_mode = mode(`v'), by(id)
-	replace `v' = `v'_mode if missing(`v')
-	drop `v'_mode
-}
-	* Tabulate number of firms per year
-	eststo: estpost tabstat id, by(year) stats(count) nototal
-	* Add scalar with distinct values (requieres distinct package)
-	distinct id
-	estadd r(ndistinct)
-
-// Tabulate trimming steps
-esttab using tabs/Nfirms_trimmingsteps.tex, replace booktabs ///
-	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
-	mlabels("All" "F22" "\$>\$Medium" "Full scheme" "Balanced") ///
-	scalar("ndistinct Distinct") sfmt(%12.0gc) noobs
+eststo clear
 
 * Replace missing values for zeroes. 
 *-------------------------------------------------------------------------------
