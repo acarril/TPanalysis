@@ -462,7 +462,8 @@ drop aux* cocoregtributario
 	distinct id
 	estadd r(ndistinct)
 	
-*******
+* Tab: firms in/out f22 by affiliation status
+*-------------------------------------------------------------------------------
 gen inf22 = (_merge_f22 == 3)
 lab var inf22 "In F22"
 lab define inf22 0 "Out F22" 1 "In F22"
@@ -496,7 +497,40 @@ esttab a1 a2 using tabs/inout_f22.tex, replace booktabs ///
 		layout(@ (@)) ///
 		)
 	
-*******
+* Tab: firms in/out of minimum size requirement
+*-------------------------------------------------------------------------------
+gen is_medlarge = (size >= 4 & !missing(size))
+lab var is_medlarge "Is medium or large"
+lab define is_medlarge 0 "Small or less" 1 "Medium or large"
+lab values is_medlarge is_medlarge
+
+eststo b1: estpost tabulate year is_medlarge if dj1850affiliate != 1, nototal
+	distinct id if is_medlarge == 0 & dj1850affiliate != 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate != 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+eststo b2: estpost tabulate year is_medlarge if dj1850affiliate == 1, nototal
+	distinct id if is_medlarge == 0 & dj1850affiliate == 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate == 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+esttab b1 b2 using tabs/is_medlarge.tex, replace booktabs ///
+	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
+	unstack nonumbers collabels(none) noobs ///
+	mlabels("Non affiliates" "Affiliates", ///
+		span prefix(\multicolumn{@span}{c}{) suffix(}) ///
+		erepeat(\cmidrule(lr){@span})) ///
+	stats(ndistinct pct_out, ///
+		fmt(%12.0gc a1) ///
+		labels("Distinct" " ") ///
+		layout(@ (@)) ///
+		)
 
 // Fill gaps in panel data with zeroes
 xtset id year
