@@ -428,6 +428,7 @@ gen aux1 = (_merge_f22 >= 2 & !missing(_merge_f22)) if year <= 2009
 egen aux2 = max(aux1), by(id)
 keep if aux2 == 1
 drop aux*
+
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
@@ -455,6 +456,24 @@ drop aux* cocoregtributario
 	* Add scalar with distinct values (requieres distinct package)
 	distinct id
 	estadd r(ndistinct)
+	
+*******
+gen inf22 = (_merge_f22 == 3)
+lab var inf22 "In F22"
+lab define inf22 0 "Out F22" 1 "In F22"
+lab values inf22 inf22
+eststo clear
+eststo: estpost tabulate year inf22 if dj1850affiliate != 1, nototal
+eststo: estpost tabulate year inf22 if dj1850affiliate == 1, nototal
+
+esttab using tabs/inout_f22.tex, replace booktabs ///
+	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
+	unstack nonumbers collabels(none) noobs ///
+	mlabels("Non affiliates" "Affiliates", ///
+		span prefix(\multicolumn{@span}{c}{) suffix(}) ///
+		erepeat(\cmidrule(lr){@span}))
+	
+*******
 
 // Fill gaps in panel data with zeroes
 xtset id year
