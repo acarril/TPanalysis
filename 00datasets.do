@@ -484,6 +484,7 @@ esttab using tabs/Nfirms_bysamplecriteria.tex, replace booktabs ///
 		)
 		
 // Fill gaps in panel data with zeroes
+/*
 xtset id year
 tsfill, full
 foreach v of varlist region size industry_sector {
@@ -491,6 +492,7 @@ foreach v of varlist region size industry_sector {
 	replace `v' = `v'_mode if missing(`v')
 	drop `v'_mode
 }
+*/
 
 * Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
