@@ -421,9 +421,12 @@ use output/rawmerge, clear
 	distinct id
 	estadd r(ndistinct)
 
+*-------------------------------------------------------------------------------
 * Data trimming
 *-------------------------------------------------------------------------------
-// Keep firms that reported F22 in any pre-treatment year
+
+* Keep firms that reported F22 in any pre-treatment year
+*-------------------------------------------------------------------------------
 gen aux1 = (_merge_f22 >= 2 & !missing(_merge_f22)) if year <= 2009
 egen aux2 = max(aux1), by(id)
 keep if aux2 == 1
@@ -435,7 +438,8 @@ drop aux*
 	distinct id if _merge_f22 >= 2
 	estadd r(ndistinct)
 
-// Keep firms that were medium or large at baseline
+* Keep firms that were medium or large at baseline
+*-------------------------------------------------------------------------------
 gen aux1 = (size == 4 | size == 5) if year == 2009
 egen aux2 = max(aux1), by(id)
 keep if aux2 == 1
@@ -446,7 +450,8 @@ drop aux*
 	distinct id
 	estadd r(ndistinct)
 	
-// Keep only firms under full tax reporting scheme
+* Keep only firms under full tax reporting scheme
+*-------------------------------------------------------------------------------
 gen aux1 = (cocoregtributario == 100000) if year == 2009
 egen aux2 = max(aux1), by(id)
 keep if aux2 == 1
@@ -462,16 +467,34 @@ gen inf22 = (_merge_f22 == 3)
 lab var inf22 "In F22"
 lab define inf22 0 "Out F22" 1 "In F22"
 lab values inf22 inf22
-eststo clear
-eststo: estpost tabulate year inf22 if dj1850affiliate != 1, nototal
-eststo: estpost tabulate year inf22 if dj1850affiliate == 1, nototal
 
-esttab using tabs/inout_f22.tex, replace booktabs ///
+eststo a1: estpost tabulate year inf22 if dj1850affiliate != 1, nototal
+	distinct id if inf22 == 0 & dj1850affiliate != 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate != 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+eststo a2: estpost tabulate year inf22 if dj1850affiliate == 1, nototal
+	distinct id if inf22 == 0 & dj1850affiliate == 1
+	local distinct_out = `r(ndistinct)'
+	estadd r(ndistinct)
+	distinct id if dj1850affiliate == 1
+	local distinct_total = `r(ndistinct)'
+	estadd scalar pct_out = `distinct_out'/`distinct_total'*100
+
+esttab a1 a2 using tabs/inout_f22.tex, replace booktabs ///
 	cell(b(fmt(%12.0gc)) rowpct(par fmt(a1))) ///
 	unstack nonumbers collabels(none) noobs ///
 	mlabels("Non affiliates" "Affiliates", ///
 		span prefix(\multicolumn{@span}{c}{) suffix(}) ///
-		erepeat(\cmidrule(lr){@span}))
+		erepeat(\cmidrule(lr){@span})) ///
+	stats(ndistinct pct_out, ///
+		fmt(%12.0gc a1) ///
+		labels("Distinct" " ") ///
+		layout(@ (@)) ///
+		)
 	
 *******
 
