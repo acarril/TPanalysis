@@ -410,6 +410,10 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 	drop if year > 2013
 	sort id year
 }
+save output/rawmerge, replace
+
+
+use output/rawmerge, clear
 	eststo clear
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
@@ -419,8 +423,11 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 
 * Data trimming
 *-------------------------------------------------------------------------------
-// Keep firms that reported F22
-keep if _merge_f22 >= 2 & !missing(_merge_f22)
+// Keep firms that reported F22 in any pre-treatment year
+gen aux1 = (_merge_f22 >= 2 & !missing(_merge_f22)) if year <= 2009
+egen aux2 = max(aux1), by(id)
+keep if aux2 == 1
+drop aux*
 	* Tabulate number of firms per year
 	eststo: estpost tabstat id, by(year) stats(count) nototal
 	* Add scalar with distinct values (requieres distinct package)
