@@ -443,7 +443,7 @@ gen aux = `is_fullreport' if year == 2009
 egen is_fullreport_pre = max(aux), by(id)
 drop aux*
 
-* Tab: Number of firms by year and trimming step
+* Tab: Number of firms by year and trimming criteria
 *-------------------------------------------------------------------------------
 eststo clear
 
@@ -475,7 +475,7 @@ distinct id if in_f22_pre == 1 & is_medlarge_pre == 1 & is_fullreport_pre == 1
 estadd scalar insample = `r(ndistinct)'
 
 // Tabulate trimming steps
-esttab using tabs/Nfirms_bysamplecriteria.tex, replace booktabs ///
+esttab using tabs/Nfirms_bytrimcriteria.tex, replace booktabs ///
 	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
 	mlabels("All" "F22" "\$>\$Medium" "Full scheme") noobs ///
 	stats(distinct insample, ///
@@ -497,7 +497,7 @@ foreach v of varlist region size industry_sector {
 * Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
 
-gen inf22 = (_merge_f22 == 3)
+gen inf22 = `in_f22'
 lab var inf22 "In F22"
 lab define inf22 0 "Out F22" 1 "In F22"
 lab values inf22 inf22
@@ -532,7 +532,7 @@ esttab a1 a2 using tabs/inout_f22.tex, replace booktabs ///
 
 * Tab: firms in sample by full tax reporting requirement and affiliation status
 *-------------------------------------------------------------------------------
-gen is_medlarge = (size >= 4 & !missing(size))
+gen is_medlarge = `is_medlarge'
 lab var is_medlarge "Is medium or large"
 lab define is_medlarge 0 "Small or less" 1 "Medium or large"
 lab values is_medlarge is_medlarge
@@ -567,7 +567,7 @@ esttab a1 a2 using tabs/is_medlarge.tex, replace booktabs ///
 
 * Tab: firms in sample by size threshold and affiliation status
 *-------------------------------------------------------------------------------
-gen is_fulltax = (cocoregtributario == 100000)
+gen is_fulltax = `is_fullreport'
 lab var is_fulltax "Full tax reporting scheme"
 lab define is_fulltax 0 "Incomplete tax report" 1 "Complete tax report"
 lab values is_fulltax is_fulltax
