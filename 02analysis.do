@@ -46,6 +46,10 @@ drop if `nyear' != r(r)
 
 * Periods, treatment and covariates locals
 *-------------------------------------------------------------------------------
+
+gen sales_local = f22c628-f29c20
+lab var sales_local "Sales net of exports"
+
 // Outcome variables
 local depvars ///
 	f22c20 /// Income tax
@@ -56,6 +60,7 @@ local depvars ///
 	f22c636 /// Earnings
 	f29c20 /// Exports
 	f29imports /// Imports
+	sales_local /// Sales net of exports
 
 // Number of treatments
 unab comps : comp*
@@ -162,6 +167,7 @@ if `ddplots' == 1 {
 			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
+
 		}
 	}
 }
@@ -210,6 +216,7 @@ if `ddtables' == 1 {
 *-------------------------------------------------------------------------------
 * Propensity Score Matching estimations
 *-------------------------------------------------------------------------------
+/*
 psestimate comp4 if year==2009, notry(id year comp*) genlor(lnodds4)
 
 gen u = runiform()
