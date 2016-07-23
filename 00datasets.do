@@ -443,6 +443,14 @@ gen aux = `is_fullreport' if year == 2009
 egen is_fullreport_pre = max(aux), by(id)
 drop aux*
 
+// Balanced panel
+if in_f22_pre is_medlarge_pre is_fullreport_pre {
+	tempvar nyear
+	bys id: gen `nyear' = [_N]
+	quietly tab year
+	gen balanced_panel = (`nyear' == r(r))
+}
+
 * Tab: Number of firms by year and trimming criteria
 *-------------------------------------------------------------------------------
 eststo clear
@@ -474,10 +482,16 @@ estadd scalar distinct = `r(ndistinct)'
 distinct id if in_f22_pre == 1 & is_medlarge_pre == 1 & is_fullreport_pre == 1
 estadd scalar insample = `r(ndistinct)'
 
+// Balanced panel
+eststo: estpost tabstat id if balanced_panel == 1, by(year) stats(count) nototal
+distinct id if balanced_panel == 1
+estadd scalar distinct = `r(ndistinct)'
+estadd scalar insample = `r(ndistinct)'
+
 // Tabulate trimming steps
 esttab using tabs/Nfirms_bytrimcriteria.tex, replace booktabs ///
 	cell(count(fmt(%12.0gc))) /*alignment(*{@span}{r})*/ collabels(none) ///
-	mlabels("All" "F22" "\$>\$Medium" "Full scheme") noobs ///
+	mlabels("All" "F22" "\$>\$Medium" "Full scheme" "Balanced") noobs ///
 	stats(distinct insample, ///
 		fmt(%12.0gc) ///
 		labels("Distinct" "In sample") ///
@@ -494,6 +508,7 @@ foreach v of varlist region size industry_sector {
 }
 */
 
+/*
 * Tab: firms in sample by F22 reporting and affiliation status
 *-------------------------------------------------------------------------------
 
@@ -601,18 +616,14 @@ esttab a1 a2 using tabs/is_fulltax.tex, replace booktabs ///
 		)
 eststo clear
 
+*/
+
 * Keep firms meeting criteria
 
 keep if in_f22
 keep if is_medlarge
-keep if is_fulltax
-
-* Force balanced panel
-*-------------------------------------------------------------------------------
-tempvar nyear
-bys id: gen `nyear' = [_N]
-quietly tab year
-drop if `nyear' != r(r)
+keep if is_fullreport_pre
+keep if balanced_panel
 
 * Replace missing values for zeroes. 
 *-------------------------------------------------------------------------------
