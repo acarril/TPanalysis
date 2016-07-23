@@ -601,6 +601,19 @@ esttab a1 a2 using tabs/is_fulltax.tex, replace booktabs ///
 		)
 eststo clear
 
+* Keep firms meeting criteria
+
+keep if in_f22
+keep if is_medlarge
+keep if is_fulltax
+
+* Force balanced panel
+*-------------------------------------------------------------------------------
+tempvar nyear
+bys id: gen `nyear' = [_N]
+quietly tab year
+drop if `nyear' != r(r)
+
 * Replace missing values for zeroes. 
 *-------------------------------------------------------------------------------
 // If filed F22 under full tax reporting, all missings are zeros. 
