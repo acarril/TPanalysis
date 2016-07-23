@@ -1,6 +1,6 @@
 // Label for transaction types
-label define transtype 1 "Dividends" 2 "Royalties" 3 "Interests" 4 "Services" ///
-	5 "Others", replace
+label define transtype 1 "Dividends payed abroad" 2 "Royalties payed abroad" 3 "Interests payed abroad" 4 "Services payed abroad" ///
+	5 "Other payments abroad", replace
 // Tax codes
 local 1 12 102 105 300 62
 local 2 17 19 23 25 601 603 605 607 27 29
