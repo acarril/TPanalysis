@@ -78,14 +78,17 @@ label values post post
 foreach v of varlist `depvars' {
 	qui gen `v'_w = `v'
 	_crcslbl `v'_w `v' // copy variable label
+	gen iswinz_`v' = .
 	foreach y in `years' {
 		qui summ `v' if year == `y', detail
 		qui replace `v'_w = r(p99) if year == `y' & `v' > r(p99) & `v' != .
+		replace iswinz_`v' = 1 if year == `y' & `v' > r(p99) & `v' != .
 		if `r(min)'<0 {
 			qui replace `v'_w = r(p1) if year == `y' & `v' < r(p1) & `v' != .
 		}
 	}
 	local depvars_w `depvars_w' `v'_w
+	local iswinz `iswinz' iswinz_`v'
 }
 
 *-------------------------------------------------------------------------------
@@ -102,16 +105,14 @@ esttab using tabs/Nfirms_bytreatment_`baseyear'.tex, booktabs replace ///
 	cell(b(fmt(%9.0fc)) pct(fmt(1) par)) nomtitle collabels(none) ///
 	stats(N, label("Total")) alignment(r)
 
-* Tab: Summary stats of by affiliation group at baseline (needs distinct package)
+* Tab: Summary stats at baseline: affiliates vs non affiliates
 *-------------------------------------------------------------------------------
 
 local non_affiliates year == `baseyear' & dj1850affiliate != 1
 local all_affiliates year == `baseyear' & dj1850affiliate == 1
-local NTH_affiliates year == `baseyear' & dj1850affiliate_TH == 0
-local TH_affiliates year == `baseyear' & dj1850affiliate_TH == 1
 
 eststo clear
-foreach group in non all NTH TH {
+foreach group in non all {
 	// Post main summary statistics:
 	eststo: estpost tabstat `depvars' if ``group'_affiliates', ///
 		stats(mean sd median) columns(statistics)
@@ -125,14 +126,55 @@ foreach group in non all NTH TH {
 		matrix colnames A = `depvars'
 		estadd matrix `stat'_w = A
 	}
+	// Add count of winsorized firms
+	tabstat `iswinz' if ``group'_affiliates', stats(count) save
+	matrix B = r(StatTotal)
+	matrix colnames B = `depvars'
+	estadd matrix iswinsor = B
 }
 
 // Tabulate stats
 esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
-	cell("mean(fmt(%9.0fc)) mean_w p50" "sd(par) sd_w(par)") unstack label alignment(rrr) ///
-	mlabels("Non affiliates" "Affiliates" "Affiliates of non tax havens" "Affiliates of tax havens", ///
+	cell("mean(fmt(%9.0fc)) mean_w iswinsor p50" "sd(par) sd_w(par)") unstack label alignment(rrrr) ///
+	mlabels("Non affiliates" "Affiliates", ///
 		span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
-	collabels(Mean "W. Mean" Median) nonumber ///
+	collabels(Mean "\specialcell{Winsorized\\Mean}" "\specialcell{Winsorized\\Firms}" Median) nonumber ///
+	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
+	
+* Tab: Summary stats at baseline: affiliates of TH vs affiliates of NTH
+*-------------------------------------------------------------------------------
+
+local NTH_affiliates year == `baseyear' & dj1850affiliate_TH == 0
+local TH_affiliates year == `baseyear' & dj1850affiliate_TH == 1
+
+eststo clear
+foreach group in NTH TH {
+	// Post main summary statistics:
+	eststo: estpost tabstat `depvars' if ``group'_affiliates', ///
+		stats(mean sd median) columns(statistics)
+	// Add scalar with number of firms:
+	distinct id if ``group'_affiliates'
+	estadd r(ndistinct)
+	// Add winsorized mean and SD:
+	foreach stat in mean sd {
+		qui tabstat `depvars_w' if ``group'_affiliates', stats(`stat') save
+		matrix A = r(StatTotal)
+		matrix colnames A = `depvars'
+		estadd matrix `stat'_w = A
+	}
+	// Add count of winsorized firms
+	tabstat `iswinz' if ``group'_affiliates', stats(count) save
+	matrix B = r(StatTotal)
+	matrix colnames B = `depvars'
+	estadd matrix iswinsor = B
+}
+
+// Tabulate stats
+esttab using tabs/summary_stats_byTH.tex, replace booktabs ///
+	cell("mean(fmt(%9.0fc)) mean_w iswinsor p50" "sd(par) sd_w(par)") unstack label alignment(rrrr) ///
+	mlabels("Affiliates of non tax havens" "Affiliates of tax havens", ///
+		span prefix(\multicolumn{@span}{c}{) suffix(}) erepeat(\cmidrule(lr){@span})) ///
+	collabels(Mean "\specialcell{Winsorized\\Mean}" "\specialcell{Winsorized\\Firms}" Median) nonumber ///
 	scalar("ndistinct Firms") sfmt(%12.0gc) noobs
 
 *===============================================================================
@@ -142,15 +184,16 @@ esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
 *-------------------------------------------------------------------------------
 * Difference-in-Differences plots
 *-------------------------------------------------------------------------------
-	// Global plot options
-	local ddplot_opts timevar(year) baseperiod(`baseyear') ///
-		plotopts(xline(3.5 4.5, lpattern(shortdash)))
+
+// Global plot options
+local ddplot_opts timevar(year) baseperiod(`baseyear') plotopts(xline(3.5 4.5, lpattern(shortdash)))
+
 if `ddplots' == 1 {
 
 
 	forvalues t = 1/`N_comps' {
-		// Loop over all dependant variables
 		foreach yvar in `depvars' {
+		/*
 			// Mean:
 			qui xtreg `yvar'_w ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
 				re vce(cluster id)
@@ -170,7 +213,14 @@ if `ddplots' == 1 {
 			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
-
+		*/	
+			// Pr > baseline:
+			gen `yvar'_pr`baseline' = (`yvar' > `yvar'[3])
+			_crcslbl `yvar'_pr`baseline' `yvar'
+			qui xtreg `yvar'_pr`baseline' i.year#i.comp`t' i.year i.comp`t', ///
+				fe vce(cluster id)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseline'.pdf", as(pdf) replace
 		}
 	}
 }
@@ -178,8 +228,9 @@ if `ddplots' == 1 {
 foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
 gen ln_`yvar' = `yvar'_w + 1
 replace ln_`yvar' = ln(`yvar')
+_crcslbl ln_`yvar' `yvar' // copy variable label
 }
-forvalues t = 2/`N_comps' {
+forvalues t = 1/`N_comps' {
 	foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
 		qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
 				re vce(cluster id)
