@@ -78,11 +78,11 @@ label values post post
 foreach v of varlist `depvars' {
 	qui gen `v'_w = `v'
 	_crcslbl `v'_w `v' // copy variable label
-	gen iswinz_`v' = .
+	qui gen iswinz_`v' = .
 	foreach y in `years' {
 		qui summ `v' if year == `y', detail
 		qui replace `v'_w = r(p99) if year == `y' & `v' > r(p99) & `v' != .
-		replace iswinz_`v' = 1 if year == `y' & `v' > r(p99) & `v' != .
+		qui replace iswinz_`v' = 1 if year == `y' & `v' > r(p99) & `v' != .
 		if `r(min)'<0 {
 			qui replace `v'_w = r(p1) if year == `y' & `v' < r(p1) & `v' != .
 		}
@@ -189,7 +189,7 @@ esttab using tabs/summary_stats_byTH.tex, replace booktabs ///
 local ddplot_opts timevar(year) baseperiod(`baseyear') plotopts(xline(3.5 4.5, lpattern(shortdash)) xtitle("") ytitle(, size(large)) xlabel(,labsize(large)) ylabel(,labsize(large)))
 
 if `ddplots' == 1 {
-	forvalues t = 1/`N_comps' {
+	forvalues t = 2/2 {
 		foreach yvar in `depvars' {
 		/*
 			// Mean:
@@ -219,13 +219,13 @@ if `ddplots' == 1 {
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseyear'.pdf", as(pdf) replace
-		*/	
+		*/
 			// Ln(Y+1):
 			capture: gen ln_`yvar' = `yvar'_w + 1
 			if _rc == 0 {
 				qui replace ln_`yvar' = ln(ln_`yvar')
 				local label : variable label `yvar'
-				lab var ln_`yvar' `"Ln(`label')"'
+				lab var ln_`yvar' `"Log of `label'"'
 			}
 			qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
 				re vce(cluster id)
@@ -233,15 +233,14 @@ if `ddplots' == 1 {
 			graph export "figs/ddplot_comp`t'_ln_`yvar'.pdf", as(pdf) replace
 			
 			// Inverse Hyperbolic Sine (IHS):
-			capture: gen IHS_`yvar' = ln(`yvar'_w + sqrt(1 + `yvar'_w^2)
-			if _rc == 0 {
+			capture: gen IHS_`yvar' = ln(`yvar'_w + sqrt(1 + `yvar'_w^2))
 				local label : variable label `yvar'
-				lab var ln_`yvar' `"Ln(`label')"'
-			}
-			qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
+				lab var IHS_`yvar' `"Inverse hyperbolic sine of `label'"'
+			qui xtreg IHS_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
 				re vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
-			graph export "figs/ddplot_comp`t'_ln_`yvar'.pdf", as(pdf) replace
+			graph export "figs/ddplot_comp`t'_IHS_`yvar'.pdf", as(pdf) replace
+
 		}
 	}
 }
