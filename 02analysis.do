@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 0
+local ddplots 	= 1
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -224,7 +224,7 @@ if `ddplots' == 1 {
 		}
 	}
 }
-
+/*
 foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
 gen ln_`yvar' = `yvar'_w + 1
 replace ln_`yvar' = ln(`yvar')
@@ -238,6 +238,7 @@ forvalues t = 1/`N_comps' {
 			graph export "figs/ddplot_comp`t'_ln_`yvar'_mean.pdf", as(pdf) replace
 	}
 }
+*/
 *-------------------------------------------------------------------------------
 * Difference-in-Differences estimations
 *-------------------------------------------------------------------------------
