@@ -220,10 +220,21 @@ if `ddplots' == 1 {
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseyear'.pdf", as(pdf) replace
 		*/	
-			// Log(Y+1)
+			// Ln(Y+1):
 			capture: gen ln_`yvar' = `yvar'_w + 1
 			if _rc == 0 {
-				replace ln_`yvar' = ln(ln_`yvar')
+				qui replace ln_`yvar' = ln(ln_`yvar')
+				local label : variable label `yvar'
+				lab var ln_`yvar' `"Ln(`label')"'
+			}
+			qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
+				re vce(cluster id)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_ln_`yvar'.pdf", as(pdf) replace
+			
+			// Inverse Hyperbolic Sine (IHS):
+			capture: gen IHS_`yvar' = ln(`yvar'_w + sqrt(1 + `yvar'_w^2)
+			if _rc == 0 {
 				local label : variable label `yvar'
 				lab var ln_`yvar' `"Ln(`label')"'
 			}
