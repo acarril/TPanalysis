@@ -430,21 +430,21 @@ local is_fullreport (cocoregtributario == 100000)
 *-------------------------------------------------------------------------------
 
 // F22 in any pretreatment year
-gen aux1 = `in_f22' if year <= 2009
+gen aux1 = `in_f22'
 egen aux2 = sum(aux1), by(id)
-gen in_f22_pre = (aux2==3)
+gen in_f22_pre = (aux2==7)
 drop aux*
 
 // Size is medium or large in any pretreatment year
-gen aux1 = `is_medlarge' if year <= 2009
+gen aux1 = `is_medlarge'
 egen aux2 = sum(aux1), by(id)
-gen is_medlarge_pre = (aux2==3)
+gen is_medlarge_pre = (aux2==7)
 drop aux*
 
 // Size is medium or large in any pretreatment year
-gen aux1 = `is_fullreport' if year <= 2009
+gen aux1 = `is_fullreport'
 egen aux2 = sum(aux1), by(id)
-gen is_fullreport_pre = (aux2==3)
+gen is_fullreport_pre = (aux2==7)
 drop aux*
 
 // Balanced panel
