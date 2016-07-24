@@ -225,15 +225,13 @@ if `ddplots' == 1 {
 			if _rc == 0 {
 				replace ln_`yvar' = ln(ln_`yvar')
 				local label : variable label `yvar'
-				lab var ln_`yvar' `"Log of `label''"'
+				lab var ln_`yvar' `"Ln(`label')"'
 			}
 			qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
 				re vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_ln_`yvar'.pdf", as(pdf) replace
 		}
-	}
-}
 	}
 }
 
