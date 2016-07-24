@@ -186,7 +186,7 @@ esttab using tabs/summary_stats_byTH.tex, replace booktabs ///
 *-------------------------------------------------------------------------------
 
 // Global plot options
-local ddplot_opts timevar(year) baseperiod(`baseyear') plotopts(xline(3.5 4.5, lpattern(shortdash)))
+local ddplot_opts timevar(year) baseperiod(`baseyear') plotopts(xline(3.5 4.5, lpattern(shortdash)) xtitle("") ytitle(, size(large)) xlabel(,labsize(large)) ylabel(,labsize(large)))
 
 if `ddplots' == 1 {
 
@@ -199,6 +199,11 @@ if `ddplots' == 1 {
 				re vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_mean.pdf", as(pdf) replace
+			
+			// Median (q50):
+			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
 		*/
 			// Pr(y>0):
 			tempvar `yvar'_bin
@@ -208,23 +213,20 @@ if `ddplots' == 1 {
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob.pdf", as(pdf) replace
-		/*	
-			// Median (q50):
-			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
-			ddplot comp`t', `ddplot_opts'
-			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
-		*/	
-			// Pr > baseline:
+
+			// Pr(Y > Y_baseyear):
 			capture gen `yvar'_pr`baseyear' = (`yvar' > `yvar'[3])
 			_crcslbl `yvar'_pr`baseyear' `yvar'
 			qui xtreg `yvar'_pr`baseyear' i.year#i.comp`t' i.year i.comp`t', ///
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseyear'.pdf", as(pdf) replace
+			
+			// Log(Y+1)
 		}
 	}
 }
-/*
+
 foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
 gen ln_`yvar' = `yvar'_w + 1
 replace ln_`yvar' = ln(`yvar')
@@ -238,7 +240,7 @@ forvalues t = 1/`N_comps' {
 			graph export "figs/ddplot_comp`t'_ln_`yvar'_mean.pdf", as(pdf) replace
 	}
 }
-*/
+
 *-------------------------------------------------------------------------------
 * Difference-in-Differences estimations
 *-------------------------------------------------------------------------------
