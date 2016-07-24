@@ -189,8 +189,6 @@ esttab using tabs/summary_stats_byTH.tex, replace booktabs ///
 local ddplot_opts timevar(year) baseperiod(`baseyear') plotopts(xline(3.5 4.5, lpattern(shortdash)) xtitle("") ytitle(, size(large)) xlabel(,labsize(large)) ylabel(,labsize(large)))
 
 if `ddplots' == 1 {
-
-
 	forvalues t = 1/`N_comps' {
 		foreach yvar in `depvars' {
 		/*
@@ -204,7 +202,7 @@ if `ddplots' == 1 {
 			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
-		*/
+		
 			// Pr(y>0):
 			tempvar `yvar'_bin
 			gen ``yvar'_bin' = (`yvar' > 0 & !missing(`yvar'))
@@ -221,23 +219,21 @@ if `ddplots' == 1 {
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseyear'.pdf", as(pdf) replace
-			
+		*/	
 			// Log(Y+1)
+			capture: gen ln_`yvar' = `yvar'_w + 1
+			if _rc == 0 {
+				replace ln_`yvar' = ln(ln_`yvar')
+				local label : variable label `yvar'
+				lab var ln_`yvar' `"Log of `label''"'
+			}
+			qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
+				re vce(cluster id)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_ln_`yvar'.pdf", as(pdf) replace
 		}
 	}
 }
-
-foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
-gen ln_`yvar' = `yvar'_w + 1
-replace ln_`yvar' = ln(`yvar')
-_crcslbl ln_`yvar' `yvar' // copy variable label
-}
-forvalues t = 1/`N_comps' {
-	foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
-		qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
-				re vce(cluster id)
-			ddplot comp`t', `ddplot_opts'
-			graph export "figs/ddplot_comp`t'_ln_`yvar'_mean.pdf", as(pdf) replace
 	}
 }
 
