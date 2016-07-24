@@ -199,7 +199,7 @@ if `ddplots' == 1 {
 				re vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_mean.pdf", as(pdf) replace
-
+		*/
 			// Pr(y>0):
 			tempvar `yvar'_bin
 			gen ``yvar'_bin' = (`yvar' > 0 & !missing(`yvar'))
@@ -208,19 +208,19 @@ if `ddplots' == 1 {
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_prob.pdf", as(pdf) replace
-			
+		/*	
 			// Median (q50):
 			qui qreg `yvar'_w i.year#i.comp`t' i.year i.comp`t', vce(robust)
 			ddplot comp`t', `ddplot_opts'
 			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
 		*/	
 			// Pr > baseline:
-			gen `yvar'_pr`baseline' = (`yvar' > `yvar'[3])
-			_crcslbl `yvar'_pr`baseline' `yvar'
-			qui xtreg `yvar'_pr`baseline' i.year#i.comp`t' i.year i.comp`t', ///
+			capture gen `yvar'_pr`baseyear' = (`yvar' > `yvar'[3])
+			_crcslbl `yvar'_pr`baseyear' `yvar'
+			qui xtreg `yvar'_pr`baseyear' i.year#i.comp`t' i.year i.comp`t', ///
 				fe vce(cluster id)
 			ddplot comp`t', `ddplot_opts'
-			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseline'.pdf", as(pdf) replace
+			graph export "figs/ddplot_comp`t'_`yvar'_prob`baseyear'.pdf", as(pdf) replace
 		}
 	}
 }
