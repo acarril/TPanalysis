@@ -16,7 +16,7 @@ clear all
 set scheme lean1
 cd D:\tpricing\analysis\
 
-local ddplots 	= 1
+local ddplots 	= 0
 local ddtables 	= 0
 
 * Set key years for analysis 
@@ -81,6 +81,9 @@ foreach v of varlist `depvars' {
 	foreach y in `years' {
 		qui summ `v' if year == `y', detail
 		qui replace `v'_w = r(p99) if year == `y' & `v' > r(p99) & `v' != .
+		if `r(min)'<0 {
+			qui replace `v'_w = r(p1) if year == `y' & `v' < r(p1) & `v' != .
+		}
 	}
 	local depvars_w `depvars_w' `v'_w
 }
@@ -139,11 +142,11 @@ esttab using tabs/summary_stats_byaffiliation.tex, replace booktabs ///
 *-------------------------------------------------------------------------------
 * Difference-in-Differences plots
 *-------------------------------------------------------------------------------
-
-if `ddplots' == 1 {
 	// Global plot options
 	local ddplot_opts timevar(year) baseperiod(`baseyear') ///
 		plotopts(xline(3.5 4.5, lpattern(shortdash)))
+if `ddplots' == 1 {
+
 
 	forvalues t = 1/`N_comps' {
 		// Loop over all dependant variables
@@ -169,6 +172,19 @@ if `ddplots' == 1 {
 			graph export "figs/ddplot_comp`t'_`yvar'_q50.pdf", as(pdf) replace
 
 		}
+	}
+}
+
+foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
+gen ln_`yvar' = `yvar'_w + 1
+replace ln_`yvar' = ln(`yvar')
+}
+forvalues t = 2/`N_comps' {
+	foreach yvar of varlist f22c628 f22c630 f22c631 f22c636 {
+		qui xtreg ln_`yvar' ib2009.year#i.comp`t' ib2009.year i.comp`t' ib2009.year#i.size ib2009.year#i.industry ib2009.year#i.region, ///
+				re vce(cluster id)
+			ddplot comp`t', `ddplot_opts'
+			graph export "figs/ddplot_comp`t'_ln_`yvar'_mean.pdf", as(pdf) replace
 	}
 }
 *-------------------------------------------------------------------------------
