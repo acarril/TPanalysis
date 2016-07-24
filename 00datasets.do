@@ -405,6 +405,7 @@ if `customs' == 1 {
 * Merge all datasets
 *-------------------------------------------------------------------------------
 // Use dj1850 as starting point
+/*
 use output/firm_chars, clear
 foreach dta in dj1850_collapsed f22 f29 f50 {
 	merge 1:1 year id using output/`dta', generate(_merge_`dta')
@@ -412,7 +413,7 @@ foreach dta in dj1850_collapsed f22 f29 f50 {
 	sort id year
 }
 save output/rawmerge, replace
-
+*/
 *-------------------------------------------------------------------------------
 * Sample trimming
 *-------------------------------------------------------------------------------
@@ -429,27 +430,28 @@ local is_fullreport (cocoregtributario == 100000)
 *-------------------------------------------------------------------------------
 
 // F22 in any pretreatment year
-gen aux = `in_f22' if year <= 2009
-egen in_f22_pre = max(aux), by(id)
+gen aux1 = `in_f22' if year <= 2009
+egen aux2 = sum(aux1), by(id)
+gen in_f22_pre = (aux2==3)
 drop aux*
 
 // Size is medium or large in any pretreatment year
-gen aux = `is_medlarge' if year == 2009
-egen is_medlarge_pre = max(aux), by(id)
+gen aux1 = `is_medlarge' if year <= 2009
+egen aux2 = sum(aux1), by(id)
+gen is_medlarge_pre = (aux2==3)
 drop aux*
 
 // Size is medium or large in any pretreatment year
-gen aux = `is_fullreport' if year == 2009
-egen is_fullreport_pre = max(aux), by(id)
+gen aux1 = `is_fullreport' if year <= 2009
+egen aux2 = sum(aux1), by(id)
+gen is_fullreport_pre = (aux2==3)
 drop aux*
 
 // Balanced panel
-if in_f22_pre is_medlarge_pre is_fullreport_pre {
-	tempvar nyear
-	bys id: gen `nyear' = [_N]
-	quietly tab year
-	gen balanced_panel = (`nyear' == r(r))
-}
+tempvar nyear
+bys id: gen `nyear' = [_N]
+quietly tab year
+gen balanced_panel = (`nyear' == r(r)) if in_f22_pre & is_medlarge_pre & is_fullreport_pre
 
 * Tab: Number of firms by year and trimming criteria
 *-------------------------------------------------------------------------------
@@ -620,10 +622,7 @@ eststo clear
 
 * Keep firms meeting criteria
 
-keep if in_f22
-keep if is_medlarge
-keep if is_fullreport_pre
-keep if balanced_panel
+keep if !missing(balanced_panel)
 
 * Replace missing values for zeroes. 
 *-------------------------------------------------------------------------------
